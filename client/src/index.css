@@ -1,0 +1,399 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #F7F6F2;
+    color: #1F241E;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Striped capsule pattern for Ambernif-style Project Stats */
+.capsule-striped {
+  background: repeating-linear-gradient(
+    -45deg,
+    #8FA896,
+    #8FA896 4px,
+    #DCE8E0 4px,
+    #DCE8E0 8px
+  );
+}
+
+.capsule-striped-soft {
+  background: repeating-linear-gradient(
+    -45deg,
+    #B5C7BB,
+    #B5C7BB 4px,
+    #EDF3EE 4px,
+    #EDF3EE 8px
+  );
+}
+
+/* Custom subtle scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #E6E5DE;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #777970;
+}
+
+.mailpilot-assistant-sidebar {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.mailpilot-assistant-mobile-drawer {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+@media (min-width: 1024px) {
+  .mailpilot-assistant-layout {
+    --mailpilot-sidebar-width: 16rem;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .mailpilot-assistant-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 50;
+    width: var(--mailpilot-sidebar-width);
+  }
+
+  .mailpilot-assistant-main-area {
+    height: 100vh;
+    height: 100dvh;
+    margin-left: var(--mailpilot-sidebar-width);
+    min-width: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 1023px) {
+  main.mailpilot-main {
+    padding: 16px;
+    min-width: 0;
+  }
+
+  header.mailpilot-assistant-header {
+    height: 56px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  header.mailpilot-client-header {
+    min-height: 56px;
+    height: auto;
+    padding: 8px 16px;
+  }
+
+  main .space-y-8 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 1.5rem;
+  }
+
+  main .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 1.25rem;
+  }
+
+  main .gap-6 {
+    gap: 1.25rem;
+  }
+
+  main .gap-5 {
+    gap: 1rem;
+  }
+
+  main .p-6 {
+    padding: 1.125rem;
+  }
+
+  main .p-7 {
+    padding: 1.25rem;
+  }
+
+  .mailpilot-modal-backdrop {
+    overflow-y: auto;
+    align-items: flex-start;
+  }
+
+  .mailpilot-modal {
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+    margin-top: auto;
+    margin-bottom: auto;
+  }
+}
+
+@media (max-width: 639px) {
+  main.mailpilot-main {
+    padding: 12px;
+    min-width: 0;
+  }
+
+  header.mailpilot-assistant-header {
+    padding-left: 12px;
+    padding-right: 12px;
+    gap: 8px;
+  }
+
+  header.mailpilot-client-header {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  header.mailpilot-client-header > div:last-child {
+    gap: 8px;
+  }
+
+  header.mailpilot-assistant-header button,
+  header.mailpilot-client-header button {
+    min-height: 36px;
+  }
+
+  header.mailpilot-client-header .client-workspace-toggle {
+    padding: 7px 9px;
+  }
+
+  div.fixed.inset-0.z-50 nav a,
+  div.fixed.inset-0.z-50 nav button {
+    min-height: 40px;
+  }
+
+  .client-workspace-toggle-label {
+    display: none;
+  }
+
+  main .space-y-8 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 1.25rem;
+  }
+
+  main .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 1rem;
+  }
+
+  main .space-y-5 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.875rem;
+  }
+
+  main .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.75rem;
+  }
+
+  main .gap-6 {
+    gap: 1rem;
+  }
+
+  main .gap-5,
+  main .gap-4 {
+    gap: 0.75rem;
+  }
+
+  main .gap-3 {
+    gap: 0.625rem;
+  }
+
+  main .p-7,
+  main .p-6 {
+    padding: 0.875rem;
+  }
+
+  main .p-5,
+  main .p-4 {
+    padding: 0.75rem;
+  }
+
+  main h1.text-3xl {
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+
+  main h1.text-2xl {
+    font-size: 1.375rem;
+    line-height: 1.3;
+  }
+
+  main h1.text-xl,
+  main h2.text-xl {
+    font-size: 1.125rem;
+    line-height: 1.35;
+  }
+
+  .mailpilot-dashboard-page {
+    padding-bottom: 5rem;
+  }
+
+  .mailpilot-dashboard-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .mailpilot-dashboard-metrics > * {
+    min-width: 0;
+    min-height: 126px;
+    padding: 12px;
+  }
+
+  .mailpilot-dashboard-metrics > :first-child {
+    grid-column: 1 / -1;
+    min-height: 116px;
+  }
+
+  .mailpilot-dashboard-metrics .text-4xl,
+  .mailpilot-dashboard-metrics .text-5xl {
+    font-size: 2rem;
+    line-height: 1.1;
+  }
+
+  .mailpilot-supporting-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .mailpilot-supporting-metrics > * {
+    min-width: 0;
+    padding: 10px 11px;
+  }
+
+  .mailpilot-supporting-metrics > * > div {
+    min-width: 0;
+    gap: 7px;
+  }
+
+  .mailpilot-supporting-metrics > * > div > span {
+    font-size: 11px;
+    line-height: 1.25;
+  }
+
+  .mailpilot-project-stats > :first-child {
+    min-width: 0;
+  }
+
+  .mailpilot-client-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .mailpilot-client-metrics > * {
+    min-width: 0;
+    min-height: 118px;
+    padding: 12px;
+  }
+
+  .mailpilot-client-metrics > * > div:first-child {
+    gap: 8px;
+  }
+
+  .mailpilot-inbox-page .mailpilot-filter-tabs {
+    gap: 6px;
+    max-width: 100%;
+    overscroll-behavior-x: contain;
+    padding-bottom: 6px;
+  }
+
+  .mailpilot-filter-tabs button {
+    min-height: 34px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .mailpilot-conversation-row {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .mailpilot-reading-pane {
+    position: static;
+    min-width: 0;
+  }
+
+  .mailpilot-reading-toolbar,
+  .mailpilot-inbox-message-header,
+  .mailpilot-thread-message-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .mailpilot-conversation-badges {
+    flex-wrap: wrap;
+  }
+
+  .mailpilot-thread-sender {
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+
+  .mailpilot-reading-subject,
+  .mailpilot-conversation-subject {
+    overflow-wrap: anywhere;
+  }
+
+  .mailpilot-reply-composer,
+  .mailpilot-thread-message,
+  .mailpilot-client-thread-message {
+    min-width: 0;
+  }
+
+  .mailpilot-reply-tones {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    white-space: nowrap;
+  }
+
+  .mailpilot-reply-input {
+    scroll-margin-bottom: 8rem;
+  }
+
+  .mailpilot-task-tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+    overscroll-behavior-x: contain;
+  }
+
+  .mailpilot-settings-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mailpilot-account-details {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .mailpilot-modal-backdrop {
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  .mailpilot-modal {
+    max-height: calc(100dvh - 24px);
+  }
+
+  .mailpilot-ask-launcher {
+    right: 12px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    min-height: 40px;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+}
