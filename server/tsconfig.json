@@ -13,5 +13,5 @@
     "resolveJsonModule": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "src/scripts/test-api.ts", "src/scripts/deep-verification.ts"]
+  "exclude": ["node_modules", "dist", "src/scripts/test-*", "src/scripts/deep-verification.ts", "src/scripts/acceptance-test-suite.ts", "src/scripts/capture-conversation-screenshots.ts", "src/scripts/verify-gemini-live.ts"]
 }

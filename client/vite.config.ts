@@ -7,7 +7,8 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     define: {
-      'import.meta.env.API_URL': JSON.stringify(env.API_URL || ''),
+      'import.meta.env.API_URL': JSON.stringify(env.API_URL || env.VITE_API_URL || ''),
+      'import.meta.env.VITE_API_URL': JSON.stringify(env.VITE_API_URL || env.API_URL || ''),
     },
     server: {
       port: 5173,

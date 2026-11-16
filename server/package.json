@@ -13,6 +13,7 @@
     "test:deep": "tsx src/scripts/deep-verification.ts",
     "test:quota": "tsx src/scripts/test-quota-handling.ts",
     "test:conversation": "tsx src/scripts/test-conversation-inbox.ts",
+    "test:cors": "tsx src/scripts/test-cors-production.ts",
     "test:acceptance": "tsx src/scripts/acceptance-test-suite.ts"
   },
   "dependencies": {
