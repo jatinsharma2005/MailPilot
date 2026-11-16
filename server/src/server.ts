@@ -23,9 +23,9 @@ const startServer = async () => {
     // Synchronize and repair conversation grouping
     await syncConversations();
 
-    const server = app.listen(ENV.PORT, async () => {
+    const server = app.listen(Number(ENV.PORT), '0.0.0.0', async () => {
       console.log(`===============================================`);
-      console.log(`🚀 MailPilot Server running on http://localhost:${ENV.PORT}`);
+      console.log(`🚀 MailPilot Server running on http://0.0.0.0:${ENV.PORT}`);
       console.log(`🛡️ Environment: ${ENV.NODE_ENV}`);
       
       const aiStatus = await AIService.checkGeminiConnectivity();

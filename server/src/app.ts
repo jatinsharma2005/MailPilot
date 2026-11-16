@@ -18,6 +18,9 @@ import taskRoutes from './routes/task.routes.js';
 
 const app = express();
 
+// Trust reverse proxy (e.g. Render, Cloudflare) - required for express-rate-limit behind proxy
+app.set('trust proxy', 1);
+
 // Security middlewares
 app.use(helmet());
 app.use(
