@@ -17,7 +17,7 @@ export const SendReplySchema = z.object({
     isSimulated: z.literal(true).default(true),
     isApproved: z
       .boolean({
-        required_error: 'Explicit human approval is required before email dispatch.',
+        error: 'Explicit human approval is required before email dispatch.',
       })
       .refine((v) => v === true, {
         message: 'Explicit human approval must be granted before email dispatch.',

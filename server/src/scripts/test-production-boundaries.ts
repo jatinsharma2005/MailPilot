@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { AddressInfo } from 'node:net';
 import { after, before, test } from 'node:test';
-import app from '../app.js';
+import app, { isAllowedOrigin } from '../app.js';
 import { ENV, parseEnv } from '../config/env.js';
 
 const server = app.listen(0, '127.0.0.1');
@@ -73,6 +73,18 @@ test('CORS rejects origins outside the explicit allowlist', async () => {
 
   assert.equal(response.status, 403);
   assert.equal(response.headers.get('access-control-allow-origin'), null);
+});
+
+test('CORS allows only HTTPS previews within the configured Vercel project domain', () => {
+  assert.equal(
+    isAllowedOrigin('https://client-git-preview-branch-jatinsharma2005-projects.vercel.app'),
+    true
+  );
+  assert.equal(isAllowedOrigin('https://client-preview-untrusted.vercel.app'), false);
+  assert.equal(
+    isAllowedOrigin('http://client-git-preview-branch-jatinsharma2005-projects.vercel.app'),
+    false
+  );
 });
 
 test('public health response omits internal configuration', async () => {

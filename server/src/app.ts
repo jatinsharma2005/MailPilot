@@ -62,11 +62,32 @@ const buildAllowedOrigins = (): Set<string> => {
 };
 
 const allowedOriginsSet = buildAllowedOrigins();
+const vercelProjectSuffixes =
+  ENV.NODE_ENV === 'production'
+    ? [...allowedOriginsSet]
+        .map((origin) => new URL(origin).hostname.match(/^client-git-main-(.+\.vercel\.app)$/)?.[1])
+        .filter((suffix): suffix is string => Boolean(suffix))
+    : [];
 
 // Origin validator for CORS requests
 export const isAllowedOrigin = (origin: string): boolean => {
   const normalized = normalizeOrigin(origin);
-  return normalized !== null && allowedOriginsSet.has(normalized);
+  if (!normalized) return false;
+  if (allowedOriginsSet.has(normalized)) return true;
+
+  if (ENV.NODE_ENV !== 'production') return false;
+  const parsedOrigin = new URL(normalized);
+  if (parsedOrigin.protocol !== 'https:') return false;
+
+  return vercelProjectSuffixes.some((suffix) => {
+    const expectedEnding = `-${suffix}`;
+    if (!parsedOrigin.hostname.startsWith('client-') || !parsedOrigin.hostname.endsWith(expectedEnding)) {
+      return false;
+    }
+
+    const deploymentName = parsedOrigin.hostname.slice('client-'.length, -expectedEnding.length);
+    return /^[a-z0-9-]+$/.test(deploymentName);
+  });
 };
 
 // CORS configuration options
@@ -93,12 +114,8 @@ const corsOptions: cors.CorsOptions = {
 // 1. Mount CORS before all other middlewares and routes (handles all methods including OPTIONS)
 app.use(cors(corsOptions));
 
-// 2. Security headers (allowing cross-origin resource access for frontend)
-app.use(
-  helmet({
-    crossOriginResourcePolicy: { policy: 'cross-origin' },
-  })
-);
+// 2. Security headers
+app.use(helmet());
 
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
