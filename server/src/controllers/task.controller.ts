@@ -4,11 +4,21 @@ import { AuthRequest } from '../middleware/auth.middleware.js';
 import { Task } from '../models/Task.js';
 import { ActivityLog } from '../models/ActivityLog.js';
 import { ApiError } from '../utils/ApiError.js';
+import { Conversation } from '../models/Conversation.js';
+import { Email } from '../models/Email.js';
 
 export class TaskController {
   static async getTasks(req: AuthRequest, res: Response) {
     const workspaceId = req.workspaceId!;
     const { type, status, assignedTo } = req.query as Record<string, string>;
+    const taskTypes = ['FOLLOW_UP', 'MEETING', 'APPROVAL', 'GENERAL'];
+    const taskStatuses = ['TODO', 'IN_PROGRESS', 'COMPLETED'];
+
+    if (type && !taskTypes.includes(type)) throw new ApiError(400, 'Invalid task type.');
+    if (status && !taskStatuses.includes(status)) throw new ApiError(400, 'Invalid task status.');
+    if (assignedTo && !['ASSISTANT', 'CLIENT'].includes(assignedTo)) {
+      throw new ApiError(400, 'Invalid task assignee.');
+    }
 
     const query: any = {
       workspaceId: new Types.ObjectId(workspaceId),
@@ -33,8 +43,20 @@ export class TaskController {
 
     if (!title) throw new ApiError(400, 'Task title is required.');
 
+    const wsObjectId = new Types.ObjectId(workspaceId);
+    const [conversation, email] = await Promise.all([
+      conversationId ? Conversation.findOne({ _id: conversationId, workspaceId: wsObjectId }) : null,
+      emailId ? Email.findOne({ _id: emailId, workspaceId: wsObjectId }) : null,
+    ]);
+
+    if (conversationId && !conversation) throw new ApiError(404, 'Conversation not found in this workspace.');
+    if (emailId && !email) throw new ApiError(404, 'Email not found in this workspace.');
+    if (conversation && email && !email.conversationId.equals(conversation._id)) {
+      throw new ApiError(400, 'The email does not belong to the selected conversation.');
+    }
+
     const task = await Task.create({
-      workspaceId: new Types.ObjectId(workspaceId),
+      workspaceId: wsObjectId,
       conversationId: conversationId ? new Types.ObjectId(conversationId) : undefined,
       emailId: emailId ? new Types.ObjectId(emailId) : undefined,
       title,

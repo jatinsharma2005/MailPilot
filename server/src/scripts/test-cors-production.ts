@@ -1,10 +1,12 @@
 import dns from 'node:dns';
 dns.setDefaultResultOrder('ipv4first');
 import http from 'http';
+import mongoose from 'mongoose';
 import app from '../app.js';
 import { connectDB } from '../config/database.js';
+import { ENV } from '../config/env.js';
 
-const VERCEL_ORIGIN = 'https://client-git-main-jatinsharma2005-projects.vercel.app';
+const CLIENT_ORIGIN = ENV.CLIENT_URL.split(',')[0].trim();
 const TEST_PORT = 5099;
 
 async function runTests() {
@@ -37,7 +39,7 @@ async function runTests() {
     const preflightRes = await fetch(`http://127.0.0.1:${TEST_PORT}/api/auth/login`, {
       method: 'OPTIONS',
       headers: {
-        'Origin': VERCEL_ORIGIN,
+        'Origin': CLIENT_ORIGIN,
         'Access-Control-Request-Method': 'POST',
         'Access-Control-Request-Headers': 'Content-Type, Authorization',
       },
@@ -45,9 +47,9 @@ async function runTests() {
 
     assert(preflightRes.status === 204 || preflightRes.status === 200, 'Preflight status is 204 or 200', `Got ${preflightRes.status}`);
     const allowOrigin = preflightRes.headers.get('access-control-allow-origin');
-    assert(allowOrigin === VERCEL_ORIGIN, 'Access-Control-Allow-Origin matches Vercel origin exactly', `Got: ${allowOrigin}`);
+    assert(allowOrigin === CLIENT_ORIGIN, 'Access-Control-Allow-Origin matches configured origin exactly', `Got: ${allowOrigin}`);
     const allowCredentials = preflightRes.headers.get('access-control-allow-credentials');
-    assert(allowCredentials === 'true', 'Access-Control-Allow-Credentials is true', `Got: ${allowCredentials}`);
+    assert(!allowCredentials, 'Credentials are disabled for bearer-token authentication', `Got: ${allowCredentials}`);
     const allowMethods = preflightRes.headers.get('access-control-allow-methods');
     assert(!!allowMethods && allowMethods.includes('POST') && allowMethods.includes('OPTIONS'), 'Allowed methods include POST & OPTIONS', `Got: ${allowMethods}`);
     const allowHeaders = preflightRes.headers.get('access-control-allow-headers');
@@ -64,6 +66,7 @@ async function runTests() {
         'Access-Control-Request-Method': 'POST',
       },
     });
+    assert(badPreflightRes.status === 403, 'Unauthorized preflight returns 403', `Got: ${badPreflightRes.status}`);
     const badAllowOrigin = badPreflightRes.headers.get('access-control-allow-origin');
     assert(!badAllowOrigin, 'No Access-Control-Allow-Origin header returned for unauthorized origin', `Got: ${badAllowOrigin}`);
 
@@ -74,7 +77,7 @@ async function runTests() {
     const loginRes = await fetch(`http://127.0.0.1:${TEST_PORT}/api/auth/login`, {
       method: 'POST',
       headers: {
-        'Origin': VERCEL_ORIGIN,
+        'Origin': CLIENT_ORIGIN,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -85,9 +88,9 @@ async function runTests() {
 
     assert(loginRes.status === 200, 'Login returns HTTP 200', `Got ${loginRes.status}`);
     const loginAllowOrigin = loginRes.headers.get('access-control-allow-origin');
-    assert(loginAllowOrigin === VERCEL_ORIGIN, 'Login response has Access-Control-Allow-Origin: Vercel origin', `Got: ${loginAllowOrigin}`);
+    assert(loginAllowOrigin === CLIENT_ORIGIN, 'Login response has the configured CORS origin', `Got: ${loginAllowOrigin}`);
     const loginCredentials = loginRes.headers.get('access-control-allow-credentials');
-    assert(loginCredentials === 'true', 'Login response has Access-Control-Allow-Credentials: true', `Got: ${loginCredentials}`);
+    assert(!loginCredentials, 'Login response does not enable cookie credentials', `Got: ${loginCredentials}`);
 
     const loginData = await loginRes.json();
     assert(loginData.success === true, 'Login payload success is true');
@@ -101,14 +104,14 @@ async function runTests() {
     const meRes = await fetch(`http://127.0.0.1:${TEST_PORT}/api/auth/me`, {
       method: 'GET',
       headers: {
-        'Origin': VERCEL_ORIGIN,
+        'Origin': CLIENT_ORIGIN,
         'Authorization': `Bearer ${token}`,
       },
     });
 
     assert(meRes.status === 200, 'GET /api/auth/me returns HTTP 200', `Got ${meRes.status}`);
     const meAllowOrigin = meRes.headers.get('access-control-allow-origin');
-    assert(meAllowOrigin === VERCEL_ORIGIN, 'GET /api/auth/me returns CORS allow origin header', `Got: ${meAllowOrigin}`);
+    assert(meAllowOrigin === CLIENT_ORIGIN, 'GET /api/auth/me returns configured CORS origin', `Got: ${meAllowOrigin}`);
     const meData = await meRes.json();
     assert(meData.success === true && meData.user?.email === 'assistant@mailpilot.io', 'User data returned matches authenticated assistant');
 
@@ -119,12 +122,12 @@ async function runTests() {
     const dashRes = await fetch(`http://127.0.0.1:${TEST_PORT}/api/dashboard/stats`, {
       method: 'GET',
       headers: {
-        'Origin': VERCEL_ORIGIN,
+        'Origin': CLIENT_ORIGIN,
         'Authorization': `Bearer ${token}`,
       },
     });
     assert(dashRes.status === 200, 'GET /api/dashboard/stats returns HTTP 200', `Got ${dashRes.status}`);
-    assert(dashRes.headers.get('access-control-allow-origin') === VERCEL_ORIGIN, 'Dashboard response has CORS header');
+    assert(dashRes.headers.get('access-control-allow-origin') === CLIENT_ORIGIN, 'Dashboard response has CORS header');
 
     // -----------------------------------------------------------------
     // TEST 6: Preflight for protected PUT/DELETE endpoints
@@ -133,13 +136,13 @@ async function runTests() {
     const complexPreflightRes = await fetch(`http://127.0.0.1:${TEST_PORT}/api/auth/profile`, {
       method: 'OPTIONS',
       headers: {
-        'Origin': VERCEL_ORIGIN,
+        'Origin': CLIENT_ORIGIN,
         'Access-Control-Request-Method': 'PATCH',
         'Access-Control-Request-Headers': 'Content-Type, Authorization',
       },
     });
     assert(complexPreflightRes.status === 204 || complexPreflightRes.status === 200, 'PATCH preflight succeeds');
-    assert(complexPreflightRes.headers.get('access-control-allow-origin') === VERCEL_ORIGIN, 'PATCH preflight has CORS origin');
+    assert(complexPreflightRes.headers.get('access-control-allow-origin') === CLIENT_ORIGIN, 'PATCH preflight has CORS origin');
     const complexMethods = complexPreflightRes.headers.get('access-control-allow-methods') || '';
     assert(complexMethods.includes('PATCH'), 'PATCH is in allowed methods list');
 
@@ -151,12 +154,18 @@ async function runTests() {
     }
     console.log('====================================================\n');
   } finally {
-    server.close();
-    process.exit(allPassed ? 0 : 1);
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => (error ? reject(error) : resolve()));
+    });
+    await mongoose.disconnect();
+    process.exitCode = allPassed ? 0 : 1;
   }
 }
 
 runTests().catch((err) => {
-  console.error('Fatal test error:', err);
-  process.exit(1);
+  const errorName = err instanceof Error ? err.name : 'UnknownError';
+  console.error(`Fatal test error (${errorName}).`);
+  void mongoose.disconnect().finally(() => {
+    process.exitCode = 1;
+  });
 });

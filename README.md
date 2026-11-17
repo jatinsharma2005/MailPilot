@@ -149,7 +149,7 @@ Create `server/.env`:
 PORT=5000
 NODE_ENV=development
 MONGODB_URI=mongodb://127.0.0.1:27017/mailpilot
-JWT_SECRET=super_secret_mailpilot_jwt_key_2026_production
+JWT_SECRET=replace_with_a_unique_random_secret_of_at_least_32_characters
 JWT_EXPIRES_IN=7d
 GEMINI_API_KEY=your_gemini_api_key_here
 CLIENT_URL=http://localhost:5173
@@ -197,7 +197,7 @@ Open [http://localhost:5173](http://localhost:5173) in your browser and click **
 2. Framework Preset: `Vite`.
 3. Build Command: `npm run build`
 4. Output Directory: `dist`
-5. Set environment variable: `VITE_API_URL=https://your-backend-service.onrender.com/api`.
+5. Set environment variable: `API_URL=https://your-backend-service.onrender.com` (backend origin only; do not append `/api`).
 
 ---
 

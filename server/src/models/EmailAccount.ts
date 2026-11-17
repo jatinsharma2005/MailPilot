@@ -34,9 +34,9 @@ const EmailAccountSchema = new Schema<IEmailAccount>(
     emailAddress: { type: String, required: true, lowercase: true, trim: true },
     displayName: { type: String, required: true },
     encryptedTokens: {
-      accessToken: { type: String },
-      refreshToken: { type: String },
-      expiresAt: { type: Date },
+      accessToken: { type: String, select: false },
+      refreshToken: { type: String, select: false },
+      expiresAt: { type: Date, select: false },
     },
     connectionStatus: {
       type: String,

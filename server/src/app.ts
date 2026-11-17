@@ -6,6 +6,7 @@ import helmet from 'helmet';
 import { ENV } from './config/env.js';
 import { apiLimiter } from './middleware/rateLimit.middleware.js';
 import { errorHandler } from './middleware/error.middleware.js';
+import { ApiError } from './utils/ApiError.js';
 
 // Route imports
 import authRoutes from './routes/auth.routes.js';
@@ -21,28 +22,40 @@ const app = express();
 // Trust reverse proxy (e.g. Render, Cloudflare) - required for express-rate-limit behind proxy
 app.set('trust proxy', 1);
 
-// Build and normalize allowed origins
+const normalizeOrigin = (value: string): string | null => {
+  try {
+    const url = new URL(value.trim());
+    if (
+      !['http:', 'https:'].includes(url.protocol) ||
+      url.username ||
+      url.password ||
+      url.pathname !== '/' ||
+      url.search ||
+      url.hash
+    ) {
+      return null;
+    }
+    return url.origin;
+  } catch {
+    return null;
+  }
+};
+
 const buildAllowedOrigins = (): Set<string> => {
   const allowed = new Set<string>();
-
-  // Always allow the exact production Vercel deployment
-  allowed.add('https://client-git-main-jatinsharma2005-projects.vercel.app');
-
-  // Local development origins
-  allowed.add('http://localhost:5173');
-  allowed.add('http://127.0.0.1:5173');
-  allowed.add('http://localhost:3000');
-  allowed.add('http://127.0.0.1:3000');
-
-  // Support single or comma-separated CLIENT_URL allowlist from environment
-  if (ENV.CLIENT_URL) {
-    const urls = ENV.CLIENT_URL.split(',');
-    for (const rawUrl of urls) {
-      const trimmed = rawUrl.trim().replace(/\/+$/, '');
-      if (trimmed) {
-        allowed.add(trimmed);
-      }
+  for (const rawOrigin of ENV.CLIENT_URL.split(',')) {
+    const origin = normalizeOrigin(rawOrigin);
+    if (!origin) {
+      throw new Error('CLIENT_URL contains an invalid origin.');
     }
+    allowed.add(origin);
+  }
+
+  if (ENV.NODE_ENV !== 'production') {
+    allowed.add('http://localhost:5173');
+    allowed.add('http://127.0.0.1:5173');
+    allowed.add('http://localhost:3000');
+    allowed.add('http://127.0.0.1:3000');
   }
 
   return allowed;
@@ -52,19 +65,8 @@ const allowedOriginsSet = buildAllowedOrigins();
 
 // Origin validator for CORS requests
 export const isAllowedOrigin = (origin: string): boolean => {
-  const normalized = origin.trim().replace(/\/+$/, '');
-
-  // Exact match in configured/default set
-  if (allowedOriginsSet.has(normalized)) {
-    return true;
-  }
-
-  // Support Vercel preview/branch deployments for this project
-  if (/^https:\/\/client-[a-zA-Z0-9_-]+-jatinsharma2005-projects\.vercel\.app$/.test(normalized)) {
-    return true;
-  }
-
-  return false;
+  const normalized = normalizeOrigin(origin);
+  return normalized !== null && allowedOriginsSet.has(normalized);
 };
 
 // CORS configuration options
@@ -79,12 +81,10 @@ const corsOptions: cors.CorsOptions = {
       return callback(null, true);
     }
 
-    // Disallowed origin: reject without crashing or exposing credentials
-    return callback(null, false);
+    return callback(new ApiError(403, 'Origin is not allowed.'));
   },
-  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
   exposedHeaders: ['RateLimit-Limit', 'RateLimit-Remaining', 'RateLimit-Reset'],
   maxAge: 86400, // 24-hour preflight cache
   optionsSuccessStatus: 204,
@@ -92,7 +92,6 @@ const corsOptions: cors.CorsOptions = {
 
 // 1. Mount CORS before all other middlewares and routes (handles all methods including OPTIONS)
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
 
 // 2. Security headers (allowing cross-origin resource access for frontend)
 app.use(
@@ -113,10 +112,6 @@ app.get('/api/health', (req, res) => {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     service: 'MailPilot Backend API',
-    version: '1.0.0',
-    environment: ENV.NODE_ENV,
-    geminiConfigured: !!(ENV.GEMINI_API_KEY && ENV.GEMINI_API_KEY.trim().length > 0),
-    geminiModel: ENV.GEMINI_MODEL,
   });
 });
 
@@ -133,7 +128,7 @@ app.use('/api/tasks', taskRoutes);
 app.use((req, res) => {
   res.status(404).json({
     success: false,
-    message: `Resource not found: ${req.method} ${req.originalUrl}`,
+    message: 'Resource not found.',
   });
 });
 

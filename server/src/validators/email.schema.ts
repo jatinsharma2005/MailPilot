@@ -3,18 +3,18 @@ import { z } from 'zod';
 export const UpdateClassificationSchema = z.object({
   body: z.object({
     classification: z.enum(['ASSISTANT_TO_REPLY', 'CLIENT_TO_REPLY', 'NO_REPLY_NEEDED', 'NEEDS_REVIEW']),
-    reason: z.string().optional(),
+    reason: z.string().max(1000).optional(),
   }),
 });
 
 export const SendReplySchema = z.object({
   body: z.object({
     to: z.string().email(),
-    cc: z.string().optional(),
-    subject: z.string().min(1),
-    body: z.string().min(1),
+    cc: z.string().max(1000).optional(),
+    subject: z.string().min(1).max(500),
+    body: z.string().min(1).max(20000),
     tone: z.enum(['professional', 'friendly', 'concise', 'formal']).default('professional'),
-    isSimulated: z.boolean().default(true),
+    isSimulated: z.literal(true).default(true),
     isApproved: z
       .boolean({
         required_error: 'Explicit human approval is required before email dispatch.',
@@ -27,12 +27,12 @@ export const SendReplySchema = z.object({
 
 export const DelegateEmailSchema = z.object({
   body: z.object({
-    delegationReason: z.string().optional(),
+    delegationReason: z.string().max(2000).optional(),
   }),
 });
 
 export const HandleEmailSchema = z.object({
   body: z.object({
-    clientNotes: z.string().optional(),
+    clientNotes: z.string().max(2000).optional(),
   }),
 });

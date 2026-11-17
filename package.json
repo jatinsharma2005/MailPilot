@@ -15,6 +15,7 @@
     "test:deep": "cd server && npx tsx src/scripts/deep-verification.ts",
     "test:acceptance": "cd server && npx tsx src/scripts/acceptance-test-suite.ts",
     "test:quota": "cd server && npx tsx src/scripts/test-quota-handling.ts",
+    "test:boundaries": "cd server && npm run test:boundaries",
     "test:dual": "cd server && npx tsx src/scripts/test-dual-provider.ts"
   },
   "devDependencies": {

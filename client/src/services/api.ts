@@ -1,20 +1,18 @@
 import axios from 'axios';
 
-// Determine backend API origin
-// 1. Explicit VITE_API_URL or API_URL from environment
-// 2. Production fallback: https://mailpilot-jewd.onrender.com
-// 3. Local dev fallback: '' (uses local Vite proxy /api -> http://localhost:5000)
-const envApiUrl = import.meta.env.VITE_API_URL || import.meta.env.API_URL;
 const isDev = import.meta.env.DEV;
+const configuredApiUrl = import.meta.env.API_URL?.trim();
 
-const defaultOrigin = isDev ? '' : 'https://mailpilot-jewd.onrender.com';
-const apiOrigin = (envApiUrl || defaultOrigin).trim().replace(/\/+$/, '');
+if (!isDev && !configuredApiUrl) {
+  throw new Error('API_URL is not configured. Set it to the backend origin and rebuild the client.');
+}
+
+const apiOrigin = isDev ? '' : configuredApiUrl!.replace(/\/+$/, '');
 
 export const API_BASE_URL = apiOrigin ? `${apiOrigin}/api` : '/api';
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },

@@ -23,3 +23,15 @@ export const authLimiter = rateLimit({
     message: 'Too many authentication attempts, please try again later.',
   },
 });
+
+export const aiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.method === 'OPTIONS',
+  message: {
+    success: false,
+    message: 'Too many AI requests from this IP. Please try again later.',
+  },
+});

@@ -9,7 +9,7 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<User>;
-  demoLogin: (role: 'ASSISTANT' | 'CLIENT' | 'ADMIN') => Promise<User>;
+  demoLogin: (role: 'ASSISTANT' | 'CLIENT') => Promise<User>;
   register: (name: string, email: string, password: string, role?: string, workspaceName?: string) => Promise<User>;
   logout: () => void;
   checkAuth: () => Promise<void>;
@@ -73,6 +73,15 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: () => {
+    const token = localStorage.getItem('mailpilot_token');
+    if (token) {
+      void api
+        .post('/auth/logout', undefined, { headers: { Authorization: `Bearer ${token}` } })
+        .catch(() => {
+          console.warn('Server session could not be invalidated; the local session was cleared.');
+        });
+    }
+
     localStorage.removeItem('mailpilot_token');
     localStorage.removeItem('mailpilot_user');
     set({ user: null, token: null, isAuthenticated: false, error: null });

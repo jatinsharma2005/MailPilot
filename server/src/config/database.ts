@@ -9,7 +9,11 @@ export const connectDB = async (): Promise<typeof mongoose> => {
     console.log(`[MongoDB] Connected successfully: ${conn.connection.host}/${conn.connection.name}`);
     return conn;
   } catch (error) {
-    console.error('[MongoDB] Connection error:', error);
+    const errorName = error instanceof Error ? error.name : 'UnknownError';
+    console.error(`[MongoDB] Connection failed (${errorName}). Check MONGODB_URI and database network access.`);
+    if (ENV.NODE_ENV !== 'production' && error instanceof Error) {
+      console.error(error.message);
+    }
     throw error;
   }
 };

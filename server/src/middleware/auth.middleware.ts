@@ -32,10 +32,13 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
       throw new ApiError(401, 'Invalid token payload structure.');
     }
 
-    const user = await User.findById(payload.userId);
+    const user = await User.findById(payload.userId).select('+tokenVersion');
 
     if (!user) {
       throw new ApiError(401, 'User account no longer exists.');
+    }
+    if ((payload.tokenVersion ?? 0) !== (user.tokenVersion ?? 0)) {
+      throw new ApiError(401, 'Session has been revoked. Please sign in again.');
     }
 
     // Verify workspace membership

@@ -87,15 +87,18 @@ export class AIController {
     await email.save();
 
     // Sync Conversation record
-    await Conversation.findByIdAndUpdate(email.conversationId, {
-      currentClassification: classificationResult.classification,
-      assignedTo:
-        classificationResult.classification === 'CLIENT_TO_REPLY'
-          ? 'CLIENT'
-          : classificationResult.classification === 'ASSISTANT_TO_REPLY'
-          ? 'ASSISTANT'
-          : 'NONE',
-    });
+    await Conversation.findOneAndUpdate(
+      { _id: email.conversationId, workspaceId: new Types.ObjectId(workspaceId) },
+      {
+        currentClassification: classificationResult.classification,
+        assignedTo:
+          classificationResult.classification === 'CLIENT_TO_REPLY'
+            ? 'CLIENT'
+            : classificationResult.classification === 'ASSISTANT_TO_REPLY'
+            ? 'ASSISTANT'
+            : 'NONE',
+      }
+    );
 
     res.status(200).json({
       success: true,
@@ -190,11 +193,21 @@ export class AIController {
   static async askAssistant(req: AuthRequest, res: Response) {
     const { query } = req.body;
     const workspaceId = req.workspaceId!;
+    const visibilityFilter =
+      req.user?.role === 'CLIENT'
+        ? {
+            $or: [
+              { classification: 'CLIENT_TO_REPLY' },
+              { status: { $in: ['HANDLED', 'DELEGATED'] } },
+            ],
+          }
+        : {};
 
-    // Retrieve recent actual emails from database for authentic context
+    // Client Q&A is limited to messages surfaced in the client workspace.
     const emails = await Email.find({
       workspaceId: new Types.ObjectId(workspaceId),
       isArchived: false,
+      ...visibilityFilter,
     })
       .sort({ receivedAt: -1 })
       .limit(20);

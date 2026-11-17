@@ -5,7 +5,17 @@ import { Email, IEmail } from '../models/Email.js';
 import { Conversation } from '../models/Conversation.js';
 import { ActivityLog } from '../models/ActivityLog.js';
 import { ApiError } from '../utils/ApiError.js';
-import { syncConversations } from '../utils/conversationSync.js';
+
+const parsePositiveInteger = (value: string, field: string): number => {
+  if (!/^[1-9]\d*$/.test(value)) {
+    throw new ApiError(400, `${field} must be a positive integer.`);
+  }
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed > 1_000_000) {
+    throw new ApiError(400, `${field} is outside the supported range.`);
+  }
+  return parsed;
+};
 
 export class EmailController {
   /**
@@ -29,8 +39,8 @@ export class EmailController {
       folder,
     } = req.query as Record<string, string>;
 
-    const pageNum = parseInt(page, 10);
-    const limitNum = parseInt(limit, 10);
+    const pageNum = parsePositiveInteger(page, 'page');
+    const limitNum = Math.min(parsePositiveInteger(limit, 'limit'), 100);
     const skip = (pageNum - 1) * limitNum;
 
     const normalizedFilter = (filter || folder || '').trim().toLowerCase();
@@ -52,6 +62,47 @@ export class EmailController {
       all: 'all',
     };
     const effectiveFilter = filterAliases[normalizedFilter] || normalizedFilter;
+    const supportedFilters = new Set([
+      'unread',
+      'important',
+      'action',
+      'waiting',
+      'assistant',
+      'client',
+      'needs_review',
+      'no_reply',
+      'meetings',
+      'general',
+      'sent',
+      'archived',
+      'inbox',
+      'all',
+    ]);
+
+    if (normalizedFilter && !supportedFilters.has(effectiveFilter)) {
+      throw new ApiError(400, 'Unsupported inbox filter.');
+    }
+    if (classification && !['ASSISTANT_TO_REPLY', 'CLIENT_TO_REPLY', 'NO_REPLY_NEEDED', 'NEEDS_REVIEW'].includes(classification)) {
+      throw new ApiError(400, 'Invalid email classification.');
+    }
+    if (priority && !['LOW', 'MEDIUM', 'HIGH', 'URGENT'].includes(priority)) {
+      throw new ApiError(400, 'Invalid email priority.');
+    }
+    if (status && !['COMPLETED', 'PENDING'].includes(status)) {
+      throw new ApiError(400, 'Invalid email status.');
+    }
+    if (!['true', 'false'].includes(isArchived)) {
+      throw new ApiError(400, 'isArchived must be true or false.');
+    }
+    if (isRead !== undefined && !['true', 'false'].includes(isRead)) {
+      throw new ApiError(400, 'isRead must be true or false.');
+    }
+    if (isImportant !== undefined && !['true', 'false'].includes(isImportant)) {
+      throw new ApiError(400, 'isImportant must be true or false.');
+    }
+    if (search && search.trim().length > 200) {
+      throw new ApiError(400, 'Search query must be 200 characters or fewer.');
+    }
 
     // Build query conditions for the Conversation collection
     const andConditions: any[] = [{ workspaceId: wsObjectId }];
@@ -274,6 +325,16 @@ export class EmailController {
       });
     }
 
+    if (
+      req.user?.role === 'CLIENT' &&
+      email.classification !== 'CLIENT_TO_REPLY' &&
+      email.status !== 'HANDLED' &&
+      email.status !== 'DELEGATED' &&
+      conversation?.currentClassification !== 'CLIENT_TO_REPLY'
+    ) {
+      throw new ApiError(404, 'Email conversation not found in this workspace.');
+    }
+
     // Auto mark all messages in this conversation as read
     await Email.updateMany(
       { conversationId: email.conversationId, workspaceId: wsObjectId, isRead: false },
@@ -374,7 +435,7 @@ export class EmailController {
     );
 
     // Sync Conversation record
-    await Conversation.findByIdAndUpdate(convId, {
+    await Conversation.findOneAndUpdate({ _id: convId, workspaceId: wsObjectId }, {
       currentClassification: classification,
       requiresAction: email.requiresAction,
       isCompleted: classification === 'NO_REPLY_NEEDED',
@@ -430,7 +491,7 @@ export class EmailController {
 
     if (convId) {
       await Email.updateMany({ conversationId: convId, workspaceId: wsObjectId }, { isRead: newReadState });
-      await Conversation.findByIdAndUpdate(convId, {
+      await Conversation.findOneAndUpdate({ _id: convId, workspaceId: wsObjectId }, {
         unreadCount: newReadState ? 0 : 1,
       });
     }
@@ -467,7 +528,7 @@ export class EmailController {
         { conversationId: convId, workspaceId: wsObjectId },
         { isImportant: newImportantState, isStarred: newImportantState }
       );
-      await Conversation.findByIdAndUpdate(convId, { isStarred: newImportantState });
+      await Conversation.findOneAndUpdate({ _id: convId, workspaceId: wsObjectId }, { isStarred: newImportantState });
     }
 
     res.status(200).json({ success: true, data: email });
@@ -498,7 +559,7 @@ export class EmailController {
 
     if (convId) {
       await Email.updateMany({ conversationId: convId, workspaceId: wsObjectId }, { isArchived: newArchiveState });
-      await Conversation.findByIdAndUpdate(convId, { isArchived: newArchiveState });
+      await Conversation.findOneAndUpdate({ _id: convId, workspaceId: wsObjectId }, { isArchived: newArchiveState });
     }
 
     res.status(200).json({ success: true, data: email });
@@ -532,7 +593,10 @@ export class EmailController {
         { conversationId: convId, workspaceId: wsObjectId },
         { status: 'COMPLETED', requiresAction: false }
       );
-      await Conversation.findByIdAndUpdate(convId, { isCompleted: true, requiresAction: false });
+      await Conversation.findOneAndUpdate(
+        { _id: convId, workspaceId: wsObjectId },
+        { isCompleted: true, requiresAction: false }
+      );
     }
 
     res.status(200).json({ success: true, data: email });
@@ -605,7 +669,10 @@ export class EmailController {
     await originalEmail.save();
 
     // Update conversation: append reply, mark hasOutbound, update lastMessageAt, snippet, messageCount
-    const conv = await Conversation.findById(originalEmail.conversationId);
+    const conv = await Conversation.findOne({
+      _id: originalEmail.conversationId,
+      workspaceId: wsObjectId,
+    });
     if (conv) {
       if (!conv.messageIds.some((m) => m.toString() === replyEmail._id.toString())) {
         conv.messageIds.push(replyEmail._id);

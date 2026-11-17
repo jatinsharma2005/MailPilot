@@ -15,6 +15,7 @@ import { AIClassificationResult, AIClassificationResultSchema } from '../../vali
 export class GeminiProvider implements AIProvider {
   readonly name = 'gemini' as const;
   private client: any = null;
+  private isTestClient = false;
 
   constructor(customClient?: any) {
     if (customClient) {
@@ -29,10 +30,11 @@ export class GeminiProvider implements AIProvider {
 
   setClient(client: any) {
     this.client = client;
+    this.isTestClient = true;
   }
 
   isConfigured(): boolean {
-    return !!(this.client && ENV.GEMINI_API_KEY && ENV.GEMINI_API_KEY.trim().length > 0);
+    return !!this.client;
   }
 
   getModel(): string {
@@ -40,7 +42,7 @@ export class GeminiProvider implements AIProvider {
   }
 
   async checkHealth(force = false): Promise<ProviderHealthCheckResult> {
-    if (!this.client || !ENV.GEMINI_API_KEY || !ENV.GEMINI_API_KEY.trim()) {
+    if (!this.client || (!this.isTestClient && !ENV.GEMINI_API_KEY)) {
       return {
         isAvailable: false,
         status: 'unconfigured',

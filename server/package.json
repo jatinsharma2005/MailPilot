@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "MailPilot Backend - AI-Powered Personal Assistant Email Management Platform",
   "main": "dist/server.js",
+  "engines": {
+    "node": ">=22.0.0 <23.0.0"
+  },
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
@@ -12,6 +15,7 @@
     "test:api": "tsx src/scripts/test-api.ts",
     "test:deep": "tsx src/scripts/deep-verification.ts",
     "test:quota": "tsx src/scripts/test-quota-handling.ts",
+    "test:boundaries": "tsx --test src/scripts/test-production-boundaries.ts",
     "test:conversation": "tsx src/scripts/test-conversation-inbox.ts",
     "test:cors": "tsx src/scripts/test-cors-production.ts",
     "test:acceptance": "tsx src/scripts/acceptance-test-suite.ts"

@@ -7,6 +7,7 @@ export interface TokenPayload {
   email: string;
   role: string;
   workspaceId: string;
+  tokenVersion: number;
 }
 
 export const generateToken = (payload: {
@@ -14,6 +15,7 @@ export const generateToken = (payload: {
   email: string;
   role: string;
   workspaceId: Types.ObjectId | string;
+  tokenVersion?: number;
 }): string => {
   return jwt.sign(
     {
@@ -21,9 +23,10 @@ export const generateToken = (payload: {
       email: payload.email,
       role: payload.role,
       workspaceId: payload.workspaceId.toString(),
+      tokenVersion: payload.tokenVersion ?? 0,
     },
     ENV.JWT_SECRET,
-    { expiresIn: '7d' }
+    { expiresIn: ENV.JWT_EXPIRES_IN as jwt.SignOptions['expiresIn'] }
   );
 };
 

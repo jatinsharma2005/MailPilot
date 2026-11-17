@@ -11,18 +11,25 @@ import { ActivityLog } from '../models/ActivityLog.js';
 import { syncConversations } from '../utils/conversationSync.js';
 
 export const seedDatabase = async () => {
-  console.log('[Seed] Starting database seeding...');
+  if (ENV.NODE_ENV === 'production') {
+    throw new Error('The demo seed is disabled in production.');
+  }
 
-  // Clear existing collections
-  await Promise.all([
-    User.deleteMany({}),
-    Workspace.deleteMany({}),
-    EmailAccount.deleteMany({}),
-    Conversation.deleteMany({}),
-    Email.deleteMany({}),
-    Task.deleteMany({}),
-    ActivityLog.deleteMany({}),
-  ]);
+  const db = mongoose.connection.db;
+  if (!db) {
+    throw new Error('Database connection is not ready.');
+  }
+
+  const collections = await db.listCollections({}, { nameOnly: true }).toArray();
+  for (const { name } of collections) {
+    if (name.startsWith('system.')) continue;
+    const existingDocument = await db.collection(name).findOne({}, { projection: { _id: 1 } });
+    if (existingDocument) {
+      throw new Error('Refusing to seed a non-empty database. No existing data was changed.');
+    }
+  }
+
+  console.log('[Seed] Starting database seeding...');
 
   // 1. Create Workspace
   const workspace = await Workspace.create({
@@ -617,10 +624,23 @@ if (process.argv[1]?.includes('seed')) {
     .then(async () => {
       await seedDatabase();
       await mongoose.disconnect();
-      process.exit(0);
+      process.exitCode = 0;
     })
-    .catch((err) => {
-      console.error('[Seed] Error during seeding:', err);
-      process.exit(1);
+    .catch(async (err) => {
+      if (
+        err instanceof Error &&
+        (err.message.startsWith('Refusing to seed') || err.message.includes('disabled in production'))
+      ) {
+        console.error(err.message);
+      } else {
+        const errorName = err instanceof Error ? err.name : 'UnknownError';
+        console.error(`[Seed] Failed (${errorName}). No existing data was intentionally deleted.`);
+      }
+      try {
+        await mongoose.disconnect();
+      } catch {
+        console.error('[Seed] Could not close the database connection.');
+      }
+      process.exitCode = 1;
     });
 }

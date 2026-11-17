@@ -18,7 +18,7 @@ export type AIClassificationResult = z.infer<typeof AIClassificationResultSchema
 
 export const AskAISchema = z.object({
   body: z.object({
-    query: z.string().min(2, 'Query must be at least 2 characters'),
+    query: z.string().min(2, 'Query must be at least 2 characters').max(1000),
     conversationId: z.string().optional(),
   }),
 });
@@ -26,6 +26,6 @@ export const AskAISchema = z.object({
 export const GenerateReplySchema = z.object({
   body: z.object({
     tone: z.enum(['professional', 'friendly', 'concise', 'formal']).default('professional'),
-    customInstructions: z.string().optional(),
+    customInstructions: z.string().max(2000).optional(),
   }),
 });

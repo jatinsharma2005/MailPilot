@@ -60,10 +60,10 @@ export class ClientController {
     email.clientNotes = clientNotes || 'Handled directly by client.';
     await email.save();
 
-    await Conversation.findByIdAndUpdate(email.conversationId, {
-      isCompleted: true,
-      assignedTo: 'NONE',
-    });
+    await Conversation.findOneAndUpdate(
+      { _id: email.conversationId, workspaceId: new Types.ObjectId(workspaceId) },
+      { isCompleted: true, assignedTo: 'NONE' }
+    );
 
     await ActivityLog.create({
       workspaceId: new Types.ObjectId(workspaceId),
@@ -105,11 +105,14 @@ export class ClientController {
     email.requiresAction = true;
     await email.save();
 
-    await Conversation.findByIdAndUpdate(email.conversationId, {
-      currentClassification: 'ASSISTANT_TO_REPLY',
-      assignedTo: 'ASSISTANT',
-      isCompleted: false,
-    });
+    await Conversation.findOneAndUpdate(
+      { _id: email.conversationId, workspaceId: new Types.ObjectId(workspaceId) },
+      {
+        currentClassification: 'ASSISTANT_TO_REPLY',
+        assignedTo: 'ASSISTANT',
+        isCompleted: false,
+      }
+    );
 
     await ActivityLog.create({
       workspaceId: new Types.ObjectId(workspaceId),

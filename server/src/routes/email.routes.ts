@@ -9,7 +9,7 @@ const router = Router();
 
 router.use(authenticate);
 
-router.get('/', asyncHandler(EmailController.getEmails));
+router.get('/', requireRole('ASSISTANT', 'ADMIN'), asyncHandler(EmailController.getEmails));
 router.get('/:id', asyncHandler(EmailController.getEmailById));
 router.patch(
   '/:id/classification',
@@ -17,8 +17,8 @@ router.patch(
   validate(UpdateClassificationSchema),
   asyncHandler(EmailController.updateClassification)
 );
-router.patch('/:id/read', asyncHandler(EmailController.toggleRead));
-router.patch('/:id/important', asyncHandler(EmailController.toggleImportant));
+router.patch('/:id/read', requireRole('ASSISTANT', 'ADMIN'), asyncHandler(EmailController.toggleRead));
+router.patch('/:id/important', requireRole('ASSISTANT', 'ADMIN'), asyncHandler(EmailController.toggleImportant));
 router.patch('/:id/archive', requireRole('ASSISTANT', 'ADMIN'), asyncHandler(EmailController.toggleArchive));
 router.patch('/:id/complete', requireRole('ASSISTANT', 'ADMIN'), asyncHandler(EmailController.markComplete));
 router.post(
