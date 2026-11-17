@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Search,
@@ -48,6 +48,7 @@ export const EmailManagement: React.FC = () => {
   const [threadMessages, setThreadMessages] = useState<Email[]>([]);
   const [threadLoading, setThreadLoading] = useState(false);
   const [expandedMessageId, setExpandedMessageId] = useState<string | null>(null);
+  const readingPaneRef = useRef<HTMLDivElement>(null);
 
   // Mobile detail view toggle
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
@@ -123,7 +124,36 @@ export const EmailManagement: React.FC = () => {
     fetchEmails();
   }, [fetchEmails]);
 
-  // Load thread messages whenever selectedEmailId changes
+  // Selected conversation scroll position management
+  const prevSelectedIdRef = useRef<string | null>(null);
+  const scrolledOnLoadRef = useRef<string | null>(null);
+
+  // 1. Immediately reset detail panel scroll to top when user selects a different conversation
+  useEffect(() => {
+    if (selectedEmailId && selectedEmailId !== prevSelectedIdRef.current) {
+      prevSelectedIdRef.current = selectedEmailId;
+      if (readingPaneRef.current) {
+        readingPaneRef.current.scrollTo({
+          top: 0,
+          behavior: 'instant' as ScrollBehavior,
+        });
+      }
+    }
+  }, [selectedEmailId]);
+
+  // 2. When newly selected conversation finishes fetching thread messages, ensure it stays at top: 0
+  useEffect(() => {
+    if (selectedEmailId && !threadLoading && scrolledOnLoadRef.current !== selectedEmailId) {
+      scrolledOnLoadRef.current = selectedEmailId;
+      if (readingPaneRef.current) {
+        readingPaneRef.current.scrollTo({
+          top: 0,
+          behavior: 'instant' as ScrollBehavior,
+        });
+      }
+    }
+  }, [selectedEmailId, threadLoading]);
+
   useEffect(() => {
     if (!selectedEmailId) {
       setThreadMessages([]);
@@ -404,12 +434,14 @@ export const EmailManagement: React.FC = () => {
       )}
 
       {/* Main Dual-Pane Layout (Conversation List + Thread Reading Pane) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+      <div className="mailpilot-inbox-layout grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch h-full min-h-0 flex-1 overflow-hidden">
         {/* Left Column (5 Cols on LG): Gmail-Style Conversation Rows */}
         <div
-          className={`mailpilot-conversation-list lg:col-span-5 bg-white rounded-3xl border border-border-main shadow-card divide-y divide-border-main/60 overflow-hidden ${
+          className={`mailpilot-conversation-list lg:col-span-5 h-full min-h-0 min-w-0 bg-white rounded-3xl border border-border-main shadow-card divide-y divide-border-main/60 overflow-y-auto overflow-x-hidden overscroll-y-contain ${
             mobileDetailOpen ? 'hidden lg:block' : 'block'
           }`}
+          tabIndex={0}
+          aria-label="Conversation list"
         >
           {loading ? (
             // Skeleton Loading Rows
@@ -596,26 +628,28 @@ export const EmailManagement: React.FC = () => {
 
         {/* Right Column (7 Cols on LG): Reading Pane matching Email Management Reference */}
         <div
-          className={`mailpilot-reading-pane lg:col-span-7 bg-white rounded-3xl border border-border-main shadow-card p-6 sm:p-7 space-y-6 lg:sticky lg:top-20 ${
-            mobileDetailOpen ? 'block' : 'hidden lg:block'
+          className={`mailpilot-reading-pane lg:col-span-7 flex-col min-h-0 min-w-0 bg-white rounded-3xl border border-border-main shadow-card overflow-hidden ${
+            mobileDetailOpen ? 'flex' : 'hidden lg:flex'
           }`}
+          tabIndex={0}
+          aria-label="Selected conversation details"
         >
-          {/* Mobile Back Button */}
-          <div className="lg:hidden pb-2 border-b border-border-main">
-            <button
-              onClick={() => setMobileDetailOpen(false)}
-              className="flex items-center gap-1.5 text-xs font-semibold text-[#234E39]"
-            >
-              <ArrowLeft size={14} />
-              <span>Back to Inbox</span>
-            </button>
-          </div>
+          {/* Fixed Header / Action Toolbar */}
+          <div className="mailpilot-reading-header flex-shrink-0 px-6 sm:px-7 py-3.5 border-b border-border-main/70 bg-white z-10">
+            {/* Mobile Back Button */}
+            <div className="lg:hidden pb-2.5 border-b border-border-main/50 mb-2.5">
+              <button
+                onClick={() => setMobileDetailOpen(false)}
+                className="mailpilot-back-btn flex items-center gap-1.5 text-xs font-semibold text-[#234E39]"
+              >
+                <ArrowLeft size={14} />
+                <span>Back to Inbox</span>
+              </button>
+            </div>
 
-          {selectedEmail ? (
-            <>
-              {/* Top Reading Toolbar */}
-              <div className="mailpilot-reading-toolbar flex items-center justify-between pb-4 border-b border-border-main/70">
-                <div className="flex items-center gap-2">
+            {selectedEmail ? (
+              <div className="mailpilot-reading-toolbar flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-1.5 sm:gap-2">
                   <button
                     onClick={() => navigate(`/assistant/emails/${selectedEmail._id}`)}
                     title="Open full conversation thread"
@@ -669,22 +703,34 @@ export const EmailManagement: React.FC = () => {
                   <PriorityBadge priority={selectedEmail.priority} />
                 </div>
               </div>
-
-              {/* Large Subject Title with Star */}
-              <div>
-                <h2 className="mailpilot-reading-subject text-xl font-extrabold text-text-primary flex items-center gap-2">
-                  <span>{selectedEmail.subject || '(No Subject)'}</span>
-                  {selectedEmail.isImportant && (
-                    <span className="text-[#C28A35] text-lg">★</span>
-                  )}
-                </h2>
-                {threadMessages.length > 1 && (
-                  <p className="text-[11px] text-text-secondary mt-1">
-                    {threadMessages.length} messages in this thread
-                  </p>
-                )}
+            ) : (
+              <div className="text-xs text-text-secondary font-medium">
+                No conversation selected
               </div>
+            )}
+          </div>
 
+          {/* Independently Scrollable Content */}
+          <div
+            ref={readingPaneRef}
+            className="mailpilot-reading-scroll flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden overscroll-y-contain p-6 sm:p-7 space-y-6"
+          >
+            {selectedEmail ? (
+              <>
+                {/* Large Subject Title with Star */}
+                <div>
+                  <h2 className="mailpilot-reading-subject text-xl font-extrabold text-text-primary flex items-center gap-2">
+                    <span>{selectedEmail.subject || '(No Subject)'}</span>
+                    {selectedEmail.isImportant && (
+                      <span className="text-[#C28A35] text-lg">★</span>
+                    )}
+                  </h2>
+                  {threadMessages.length > 1 && (
+                    <p className="text-[11px] text-text-secondary mt-1">
+                      {threadMessages.length} messages in this thread
+                    </p>
+                  )}
+                </div>
               {/* Chronological Message History in Thread */}
               <div className="space-y-3">
                 {threadLoading ? (
@@ -898,6 +944,7 @@ export const EmailManagement: React.FC = () => {
               <p className="text-[11px]">Select a conversation from the left to read and reply.</p>
             </div>
           )}
+          </div>
         </div>
       </div>
 

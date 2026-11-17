@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Mail,
@@ -26,6 +26,8 @@ import { AskAIDrawer } from '../common/AskAIDrawer.js';
 export const AssistantLayout: React.FC = () => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const isInboxRoute = pathname === '/assistant/emails';
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -56,7 +58,11 @@ export const AssistantLayout: React.FC = () => {
   };
 
   return (
-    <div className="mailpilot-assistant-layout flex min-h-screen bg-bg-primary text-text-primary font-sans">
+    <div
+      className={`mailpilot-assistant-layout flex min-h-screen bg-bg-primary text-text-primary font-sans ${
+        isInboxRoute ? 'mailpilot-inbox-shell' : ''
+      }`}
+    >
       {/* Desktop Sidebar */}
       <aside className="mailpilot-assistant-sidebar hidden lg:flex w-64 flex-col border-r border-border-main bg-bg-primary shrink-0 select-none">
         {/* Brand Header */}
@@ -314,7 +320,7 @@ export const AssistantLayout: React.FC = () => {
         </header>
 
         {/* Page Content */}
-        <main className="mailpilot-main flex-1 p-4 sm:p-6 md:p-8">
+        <main className={`mailpilot-main flex-1 p-4 sm:p-6 md:p-8 ${isInboxRoute ? 'mailpilot-inbox-main' : ''}`}>
           <Outlet />
         </main>
       </div>

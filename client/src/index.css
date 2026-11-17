@@ -51,6 +51,108 @@
   background: #777970;
 }
 
+.mailpilot-inbox-shell {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.mailpilot-inbox-shell .mailpilot-assistant-main-area {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.mailpilot-inbox-shell .mailpilot-assistant-header {
+  flex-shrink: 0;
+}
+
+.mailpilot-inbox-shell main.mailpilot-main {
+  display: flex;
+  flex: 1 1 0%;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.mailpilot-inbox-shell .mailpilot-inbox-page {
+  display: flex;
+  flex: 1 1 0%;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding-bottom: 0;
+}
+
+.mailpilot-inbox-shell .mailpilot-inbox-page > :not(.mailpilot-inbox-layout) {
+  flex-shrink: 0;
+}
+
+.mailpilot-inbox-shell .mailpilot-inbox-layout {
+  display: grid;
+  flex: 1 1 0%;
+  grid-template-rows: minmax(0, 1fr);
+  align-items: stretch;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.mailpilot-inbox-shell .mailpilot-conversation-list {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+}
+
+.mailpilot-inbox-shell .mailpilot-reading-pane {
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  padding: 0 !important;
+}
+
+@media (max-width: 1023px) {
+  .mailpilot-inbox-shell .mailpilot-conversation-list.hidden,
+  .mailpilot-inbox-shell .mailpilot-reading-pane.hidden {
+    display: none !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .mailpilot-inbox-shell .mailpilot-conversation-list {
+    display: flex !important;
+  }
+  .mailpilot-inbox-shell .mailpilot-reading-pane {
+    display: flex !important;
+  }
+}
+
+.mailpilot-inbox-shell .mailpilot-reading-header {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+  background-color: #ffffff;
+}
+
+.mailpilot-inbox-shell .mailpilot-reading-scroll {
+  flex: 1 1 0%;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+}
+
 .mailpilot-assistant-sidebar {
   height: 100vh;
   height: 100dvh;
@@ -325,6 +427,12 @@
   .mailpilot-reading-pane {
     position: static;
     min-width: 0;
+    height: 100%;
+  }
+
+  .mailpilot-reading-scroll {
+    padding: 1rem !important;
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom)) !important;
   }
 
   .mailpilot-reading-toolbar,
